@@ -1,0 +1,12 @@
+System:
+  location_to_watch : /home/darkwing/Dokumente
+  location_to_write :  /home/darkwing/Bilder
+  convert_format : mp3
+
+Logging:
+  log_location : ./logs
+  debug_lvl : INFO
+
+Testing:
+  location_to_watch = ./watch_dir
+  location_to_write = ./write_dir
