@@ -5,19 +5,19 @@ from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 from pydub import AudioSegment
 import logging
+import configparser
 
-config = configparser.ConfigParser()
-config.read("../config.ini")
-log_dir = config.get("Logging", "log_location")
+
+log_dir = "./logs"
 # Create a custom logger
 name = __name__
-logging.getLogger(name)
+logger = logging.getLogger(name)
 
 # Create handlers
 c_handler = logging.StreamHandler()
 f_handler = logging.FileHandler(os.path.join(log_dir, f"{name}.log"))
-c_handler.setLevel(logging.INFO)
-f_handler.setLevel(logging.INFO)
+c_handler.setLevel(logging.DEBUG)
+f_handler.setLevel(logging.DEBUG)
 
 # Create formatters and add it to handlers
 c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
@@ -26,12 +26,10 @@ c_handler.setFormatter(c_format)
 f_handler.setFormatter(f_format)
 
 # Add handlers to the logger
-logging.addHandler(c_handler)
-logging.addHandler(f_handler)
+logger.addHandler(c_handler)
+logger.addHandler(f_handler)
 
 class Watcher:
-    DIRECTORY_TO_WATCH = "/media/festplatte/public/recordings/input"
-    OUTPUT_DIR = "/media/festplatte/public/recordings/output"
 
     def __init__(self, config):
         self.config = config
@@ -43,7 +41,7 @@ class Watcher:
         event_handler = Handler()
         self.observer.schedule(
             event_handler,
-            self.DIRECTORY_TO_WATCH,
+            "/home/darkwing/Dokumente",
             recursive=False
         )
         logger.info("Starting observer")
@@ -60,50 +58,38 @@ class Watcher:
 
 
 class Handler(PatternMatchingEventHandler):
+    
 
-    def on_create(self, event):
-        logging.info("New file was created")
-        logging.info("preparing to convert file")
+    def on_created(self, event):
+        print("New file found")
+        logger.info("New file was created")
+        logger.info("preparing to convert file")
 
-        logging.debug("loading config file")
+        logger.debug("loading config file")
         config = configparser.ConfigParser()
-        config.read("../config.ini")
-        logging.debug("config file loaded")
+        config.read("/home/darkwing/dev/file_watcher/config.ini")
+        logger.debug("config file loaded")
 
-        logging.info("Listing files in dir {}".format(config.get("System","location_to_watch")))
-        data_in_dir = os.listdir(config.get("System", "location_to_watch"))
-        logging.debug(f"{data_in_dir}")
+        logger.info("Listing files in dir {}".format(config.get("System","location_to_watch")))
+        data_in_dir = os.listdir("/home/darkwing/Dokumente")
+        print(f"{data_in_dir}")
+        logger.debug(f"{data_in_dir}")
 
         for each in data_in_dir:
             if each == "GOOD":
-                pass
+                print(each)
             else:
+                print("Test")
                 file_name, ext = each.split(".")
-                logging.debug(f"getting filename: {filename}")
+                print(f"getting filename: {file_name}")
+                logger.debug(f"getting filename: {file_name}")
 
                 try:
-                    logging.debug(f"Trying to load wav file: {each}")
-                    wav_file = AudioSegment.from_wav(each)
-                    logging.info(f"Wav-file: [{each}] successfully loaded")
+                    logger.debug(f"Trying to load wav file: {each}")
+                    AudioSegment.from_wav(f"/home/darkwing/Dokumente/{file_name}.wav").export(f"/home/darkwing/Bilder/{file_name}.mp3", format="mp3")
+                    logger.info(f"Wav-file: [{each}] successfully loaded")
                 except Exception as e:
-                    logging.error("Wav_file could not be loaded.")
-                    logging.error(e)
+                    logger.error("Wav_file could not be loaded.")
+                    logger.error(e)
                 
-                try:
-                    logging.debug(f"Trying to convert wav2mp3")
-                    export_path ="{}/{}.{}".format(config.get("System", "location_to_write"), file_name, config.get("System", "convert_format"))
-                    wav_file.export(export_path, format=config.get("System", "convert_format"))
-                    logging.info(f"File: [{export_path}] was created successfully")
-                except Exception as e:
-                    logging.error("File could not be converted")
-                    logging.error(e)
-                
-                try:
-                    shutil.move(each, "./GOOD/")
-                    logging.info(f"Moved {each} to GOOD folder")
-                except Exception as e:
-                    logging.error(f"Could not move {each} to good")
-                    logging.error(e)
-                
-
-
+                shutil.move(f"/home/darkwing/Dokumente/{file_name}.wav", "/home/darkwing/Dokumente/GOOD/")
